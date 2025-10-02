@@ -1,6 +1,7 @@
+matplotlib
 numpy
 pandas
-scipy
-matplotlib
 pandas-datareader
-pip freeze > requirements.txt
+python-dotenv
+scikit-learn
+scipy

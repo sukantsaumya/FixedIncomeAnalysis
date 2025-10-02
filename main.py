@@ -5,9 +5,9 @@ import datetime
 import pandas_datareader.data as web
 
 # Import our custom modules
-import yield_curve_model
-import analysis
-import forecasting
+from src import yield_curve_model
+from src import analysis
+from src import forecasting
 
 def fetch_and_clean_data():
     """Fetches and prepares the Treasury and macro data from FRED."""

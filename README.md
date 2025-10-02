@@ -26,14 +26,17 @@ This project implements a complete quantitative workflow for fixed-income analys
 ## How to Run
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repo-url>
-    cd <your-repo-folder>
+    git clone [https://github.com/sukantsaumya/FixedIncomeAnalysis.git](https://github.com/sukantsaumya/FixedIncomeAnalysis.git)
     ```
-2.  **Install dependencies:**
+2.  **Navigate into the project folder:**
+    ```bash
+    cd FixedIncomeAnalysis
+    ```
+3.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
-3.  **Run the main analysis pipeline:**
+4.  **Run the main analysis pipeline:**
     ```bash
     python main.py
     ```

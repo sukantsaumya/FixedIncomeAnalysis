@@ -12,7 +12,7 @@ def run_autoregressive_forecast(df_cleaned):
     df_ar['DGS10_lag1'] = df_ar['DGS10'].shift(1)
     df_ar = df_ar.dropna()
 
-    X = df_ar[['DGS10_lag1']]
+    X = df_ar[['DGS10_lag1']]# pylint: disable=invalid-name
     y = df_ar['DGS10']
 
     X_train, X_test, y_train, y_test = train_test_split(

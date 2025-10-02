@@ -1,8 +1,8 @@
-# in src/analysis.py
-from . import yield_curve_model
+
 import numpy as np
 import pandas as pd
-from yield_curve_model import nelson_siegel
+
+from .yield_curve_model import nelson_siegel
 
 def run_all_analysis(final_params, portfolio_df):
     """Runs all analysis functions and prints the results."""
@@ -70,7 +70,7 @@ def run_key_rate_analysis(params, portfolio_df):
     
     results = []
     for key_rate in key_rates_to_shock:
-        shocked_curve = lambda tau: base_curve(tau) + np.maximum(0, 1 - np.abs(tau - key_rate)) * (shock_size_bps / 100.0)
+        shocked_curve = lambda tau, k=key_rate: base_curve(tau) + np.maximum(0, 1 - np.abs(tau - k)) * (shock_size_bps / 100.0)
         
         shocked_value = portfolio_df.apply(
             lambda row: _calculate_bond_price_custom_curve(row['Coupon Rate (%)'], row['Years to Maturity'], shocked_curve),

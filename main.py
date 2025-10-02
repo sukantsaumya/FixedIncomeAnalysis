@@ -1,8 +1,11 @@
 
+
 import pandas as pd
 import numpy as np
 import datetime
 import pandas_datareader.data as web
+import os                  # <-- ADDED
+from dotenv import load_dotenv # <-- ADDED
 
 # Import our custom modules
 from src import yield_curve_model
@@ -10,14 +13,29 @@ from src import analysis
 from src import forecasting
 
 def fetch_and_clean_data():
-    """Fetches and prepares the Treasury and macro data from FRED."""
+    """
+    Fetches and prepares the Treasury data from FRED, securely loading
+    the API key from a .env file.
+    """
+    # This line loads the variables from your .env file into the environment
+    load_dotenv()
+    
+    # This retrieves the key. It returns None if the key is not found.
+    api_key = os.getenv("FRED_API_KEY")
+    
+    # A check to ensure the key was loaded correctly
+    if not api_key:
+        raise ValueError("FRED_API_KEY not found. Please create a .env file with your key.")
+    
     print("Fetching data from FRED... (This may take a moment)")
     start_date = datetime.datetime(2010, 1, 1)
     end_date = datetime.datetime.today()
     
     series_ids = ['DGS1MO', 'DGS3MO', 'DGS6MO', 'DGS1', 'DGS2', 'DGS5', 'DGS10', 'DGS30']
     
-    df = web.DataReader(series_ids, 'fred', start_date, end_date)
+    # Pass the loaded api_key to the function call
+    df = web.DataReader(series_ids, 'fred', start_date, end_date, api_key=api_key)
+    
     df_cleaned = df.ffill().dropna()
     print("Data successfully fetched and cleaned.")
     return df_cleaned

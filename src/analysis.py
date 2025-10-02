@@ -1,4 +1,5 @@
-
+# in src/analysis.py
+from . import yield_curve_model
 import numpy as np
 import pandas as pd
 from yield_curve_model import nelson_siegel

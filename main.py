@@ -41,7 +41,7 @@ def main():
     print("="*50)
 
     # --- Phase 1: Data ---
-    df_cleaned = fetch_and_clean_data()
+    df_cleaned = get_data_from_database()
     
     # Prepare data for calibration (using the most recent day)
     latest_yields = df_cleaned.iloc[-1]

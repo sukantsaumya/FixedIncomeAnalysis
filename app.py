@@ -157,6 +157,23 @@ else:
     rmse = nss_rmse
     final_model_func = yield_curve_model.nelson_siegel_svensson # <-- Select the function
 
+# Database status information (shown after data is loaded and session state is initialized)
+try:
+    db_info = data_manager.get_database_info()
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📊 Database Status")
+    st.sidebar.info(f"**Status**: {db_info.get('status', 'Unknown')}")
+    st.sidebar.write(f"📅 Records: {db_info.get('record_count', 'N/A')}")
+    if db_info.get('date_range'):
+        st.sidebar.write(f"📈 Range: {db_info['date_range']}")
+    if db_info.get('note'):
+        st.sidebar.caption(f"💡 {db_info['note']}")
+except Exception as e:
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📊 Database Status")
+    st.sidebar.info("**Status**: Loading...")
+    st.sidebar.caption("Database information will appear here")
+
 # --- Display Results ---
 
 # Create two columns for a cleaner layout

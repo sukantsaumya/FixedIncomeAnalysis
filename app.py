@@ -85,8 +85,22 @@ def load_and_calibrate():
 # Main App UI
 # =================================================================
 
-st.title("📈 Fixed Income Analysis Dashboard")
-st.markdown("An interactive dashboard showcasing the results of the yield curve modeling and risk analysis project.")
+st.title("🏦 Fixed Income Analysis Dashboard")
+st.markdown("### Professional Treasury Market Analysis & Risk Management")
+
+# Add educational introduction
+with st.expander("📚 What is Fixed Income Analysis?", expanded=True):
+    st.markdown("""
+    **Fixed Income Analysis** helps investors understand government bond markets and manage risk. This dashboard analyzes:
+
+    - 📊 **Yield Curves**: How interest rates vary across different bond maturities
+    - 🎯 **Volatility**: How much bond prices fluctuate over time
+    - ⚠️ **Risk Scenarios**: What happens if interest rates change suddenly
+
+    **Why it matters**: Treasury bonds affect mortgage rates, retirement savings, and the entire economy!
+    """)
+
+st.markdown("---")
 
 # --- Sidebar for user inputs ---
 st.sidebar.header("Model Configuration")

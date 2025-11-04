@@ -97,6 +97,10 @@ model_type = st.sidebar.radio(
 )
 
 # Database status information
+# Initialize database first to get accurate status
+if 'db_initialized' not in st.session_state:
+    data_manager.get_data_for_analysis()  # This will initialize the database
+
 db_info = data_manager.get_database_info()
 st.sidebar.info(f"📊 **Data Status**: {db_info.get('status', 'Unknown')}")
 st.sidebar.write(f"📅 Records: {db_info.get('record_count', 'N/A')}")

@@ -362,8 +362,23 @@ with col2:
     st.dataframe(rv_df.round(4))
 
     # --- Duration Scenario Analysis (Interactive Part) ---
-    st.header("Duration & Risk Scenario")
-    st.markdown(f"Simulating the impact of a **{rate_shock_bps} bps** parallel rate shock.")
+    st.header("⚠️ Interest Rate Risk Scenarios")
+
+    # Educational content about duration risk
+    with st.expander("📚 Understanding Duration Risk", expanded=False):
+        st.markdown("""
+        **Duration** measures how sensitive bond prices are to interest rate changes:
+
+        - **High duration**: Price changes a lot when rates change (high risk)
+        - **Low duration**: Price changes little when rates change (low risk)
+
+        **Key insight**: When interest rates go up, bond prices go down, and vice versa!
+
+        This simulation shows what would happen to your portfolio if rates suddenly change.
+        """)
+
+    st.markdown(f"#### 🔄 Simulating {rate_shock_bps} bps rate change")
+    st.markdown(f"**{rate_shock_bps/100:.1f}%** {'increase' if rate_shock_bps > 0 else 'decrease'} in interest rates")
 
     # Run duration analysis based on the slider value
     total_market_value = portfolio_df['Market Price'].sum()

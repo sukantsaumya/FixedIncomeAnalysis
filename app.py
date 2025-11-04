@@ -176,16 +176,31 @@ else:
 col1, col2 = st.columns((2, 1.5))
 
 with col1:
-    st.header("Yield Curve Calibration")
+    st.header("📊 Yield Curve Analysis")
 
-    # Display RMSE comparison
+    # Educational content about yield curves
+    with st.expander("📚 Understanding Yield Curves", expanded=False):
+        st.markdown("""
+        A **yield curve** shows interest rates for bonds with different maturity dates:
+
+        - **Short-term** (1 month): Influences short-term borrowing costs
+        - **Long-term** (30 years): Influences mortgage rates and long-term investments
+
+        **Normal curve**: Long-term rates > Short-term rates
+        **Inverted curve**: Short-term rates > Long-term rates (recession signal)
+
+        **RMSE** (Root Mean Square Error): How well our model matches real market data. Lower is better!
+        """)
+
+    # Display RMSE comparison with better explanations
+    st.markdown("#### 📈 Model Performance")
     col_rmse1, col_rmse2 = st.columns(2)
     with col_rmse1:
-        st.metric(f"NS Model RMSE", f"{ns_rmse:.2f} bps")
+        st.metric(f"Nelson-Siegel", f"{ns_rmse:.2f} bps", help="4-parameter classic model")
     with col_rmse2:
-        st.metric(f"NSS Model RMSE", f"{nss_rmse:.2f} bps")
+        st.metric(f"Nelson-Siegel-Svensson", f"{nss_rmse:.2f} bps", help="6-parameter advanced model")
 
-    st.metric(f"Selected Model ({model_type}) RMSE", f"{rmse:.2f} bps",
+    st.metric(f"✅ Selected: {model_type}", f"{rmse:.2f} bps",
               help="RMSE for the currently selected yield curve model")
 
     # Generate and display the plot

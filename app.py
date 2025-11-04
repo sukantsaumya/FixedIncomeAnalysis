@@ -94,6 +94,13 @@ model_type = st.sidebar.radio(
     help="Choose between 4-parameter NS and 6-parameter NSS models"
 )
 
+# Database status information
+db_info = data_manager.get_database_info()
+st.sidebar.info(f"📊 **Data Status**: Live from Database")
+st.sidebar.write(f"📅 Records: {db_info.get('record_count', 'N/A')}")
+if db_info.get('date_range'):
+    st.sidebar.write(f"📈 Range: {db_info['date_range']}")
+
 st.sidebar.header("Risk Scenario Controls")
 rate_shock_bps = st.sidebar.slider(
     "Interest Rate Shock (in basis points)",

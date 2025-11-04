@@ -45,6 +45,11 @@ def objective_sse(params, maturities, market_yields):
     model_yields = nelson_siegel(maturities, *params)
     return np.sum((market_yields - model_yields) ** 2)
 
+def objective_sse_svensson(params, maturities, market_yields):
+    """Objective function to minimize: Sum of Squared Errors (SSE) for NSS model."""
+    model_yields = nelson_siegel_svensson(maturities, *params)
+    return np.sum((market_yields - model_yields) ** 2)
+
 def calibrate_yield_curve(maturities, market_yields):
     """
     Performs the complete two-stage calibration and returns the optimal parameters.

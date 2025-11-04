@@ -98,10 +98,12 @@ model_type = st.sidebar.radio(
 
 # Database status information
 db_info = data_manager.get_database_info()
-st.sidebar.info(f"📊 **Data Status**: Live from Database")
+st.sidebar.info(f"📊 **Data Status**: {db_info.get('status', 'Unknown')}")
 st.sidebar.write(f"📅 Records: {db_info.get('record_count', 'N/A')}")
 if db_info.get('date_range'):
     st.sidebar.write(f"📈 Range: {db_info['date_range']}")
+if db_info.get('note'):
+    st.sidebar.caption(f"💡 {db_info['note']}")
 
 st.sidebar.header("Risk Scenario Controls")
 rate_shock_bps = st.sidebar.slider(

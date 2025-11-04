@@ -247,7 +247,21 @@ with col1:
             st.info("NS model provides comparable or better fit")
 
 # --- Volatility Analysis Section ---
-st.header("Volatility Analysis")
+st.header("🎯 Volatility & Risk Analysis")
+
+# Educational content about volatility
+with st.expander("📚 What is Volatility?", expanded=True):
+    st.markdown("""
+    **Volatility** measures how much bond prices fluctuate over time:
+
+    - **High volatility**: Prices change a lot (risky, uncertain market)
+    - **Low volatility**: Prices change little (stable, predictable market)
+
+    **GARCH Model**: Industry-standard tool for forecasting future volatility based on historical patterns
+
+    **Why it matters**: Higher volatility = higher risk, but also potentially higher returns!
+    """)
+
 if conditional_vol is not None and garch_params is not None:
     # Create subplot with two panels
     fig_vol, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))

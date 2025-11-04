@@ -19,6 +19,27 @@ def nelson_siegel(tau, beta0, beta1, beta2, lambda_):
         yields[~zero_mask] = beta0 + beta1 * factor1 + beta2 * factor2
     return yields
 
+def nelson_siegel_svensson(tau, beta0, beta1, beta2, beta3, lambda1, lambda2):
+    """Computes the Nelson-Siegel-Svensson yield curve values with numerical stability."""
+    tau = np.atleast_1d(tau)
+    yields = np.zeros_like(tau, dtype=float)
+    zero_mask = np.abs(tau) < 1e-10
+    yields[zero_mask] = beta0 + beta1
+
+    if np.any(~zero_mask):
+        t = tau[~zero_mask]
+        z1 = t / lambda1
+        z2 = t / lambda2
+        exp_z1 = np.exp(-z1)
+        exp_z2 = np.exp(-z2)
+
+        factor1 = (1.0 - exp_z1) / z1
+        factor2 = factor1 - exp_z1
+        factor3 = (1.0 - exp_z2) / z2 - exp_z2
+
+        yields[~zero_mask] = beta0 + beta1 * factor1 + beta2 * factor2 + beta3 * factor3
+    return yields
+
 def objective_sse(params, maturities, market_yields):
     """Objective function to minimize: Sum of Squared Errors (SSE)."""
     model_yields = nelson_siegel(maturities, *params)

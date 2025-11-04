@@ -111,21 +111,63 @@ col1, col2 = st.columns((2, 1.5))
 
 with col1:
     st.header("Yield Curve Calibration")
-    st.metric("Final Model RMSE", f"{rmse:.2f} bps",
-              help="This is the best achievable RMSE for the Nelson-Siegel model on this data.")
+
+    # Display RMSE comparison
+    col_rmse1, col_rmse2 = st.columns(2)
+    with col_rmse1:
+        st.metric(f"NS Model RMSE", f"{ns_rmse:.2f} bps")
+    with col_rmse2:
+        st.metric(f"NSS Model RMSE", f"{nss_rmse:.2f} bps")
+
+    st.metric(f"Selected Model ({model_type}) RMSE", f"{rmse:.2f} bps",
+              help="RMSE for the currently selected yield curve model")
 
     # Generate and display the plot
     fig, ax = plt.subplots(figsize=(10, 6))
     tau_smooth = np.linspace(0.01, 30, 500)
-    yields_smooth = yield_curve_model.nelson_siegel(tau_smooth, *final_params)
+
+    # Plot based on selected model
+    if model_type == "Nelson-Siegel":
+        yields_smooth = yield_curve_model.nelson_siegel(tau_smooth, *final_params)
+        curve_label = 'Fitted Nelson-Siegel Curve'
+    else:
+        yields_smooth = yield_curve_model.nelson_siegel_svensson(tau_smooth, *final_params)
+        curve_label = 'Fitted Nelson-Siegel-Svensson Curve'
+
     ax.scatter(maturities, market_yields, color='red', s=80, zorder=5, label='Market Data')
-    ax.plot(tau_smooth, yields_smooth, 'b-', linewidth=2, label='Fitted Nelson-Siegel Curve')
-    ax.set_title(f'Calibrated Yield Curve (RMSE = {rmse:.2f} bps)')
+    ax.plot(tau_smooth, yields_smooth, 'b-', linewidth=2, label=curve_label)
+    ax.set_title(f'{model_type} Yield Curve (RMSE = {rmse:.2f} bps)')
     ax.set_xlabel('Maturity (Years)')
     ax.set_ylabel('Yield (%)')
     ax.legend()
     ax.grid(True, linestyle='--', alpha=0.6)
     st.pyplot(fig)
+
+    # Add model comparison plot when NSS is selected
+    if model_type == "Nelson-Siegel-Svensson":
+        st.subheader("Model Comparison")
+        fig_comp, ax_comp = plt.subplots(figsize=(10, 6))
+
+        # Plot both curves for comparison
+        ns_yields = yield_curve_model.nelson_siegel(tau_smooth, *ns_params)
+        nss_yields = yield_curve_model.nelson_siegel_svensson(tau_smooth, *nss_params)
+
+        ax_comp.scatter(maturities, market_yields, color='red', s=80, zorder=5, label='Market Data')
+        ax_comp.plot(tau_smooth, ns_yields, 'b--', linewidth=2, alpha=0.7, label=f'NS Curve ({ns_rmse:.2f} bps)')
+        ax_comp.plot(tau_smooth, nss_yields, 'g-', linewidth=2, label=f'NSS Curve ({nss_rmse:.2f} bps)')
+        ax_comp.set_title('NS vs NSS Model Comparison')
+        ax_comp.set_xlabel('Maturity (Years)')
+        ax_comp.set_ylabel('Yield (%)')
+        ax_comp.legend()
+        ax_comp.grid(True, linestyle='--', alpha=0.6)
+        st.pyplot(fig_comp)
+
+        # Show improvement percentage
+        if nss_rmse < ns_rmse:
+            improvement = (ns_rmse - nss_rmse) / ns_rmse * 100
+            st.success(f"NSS model shows {improvement:.2f}% improvement in fit accuracy")
+        else:
+            st.info("NS model provides comparable or better fit")
 
 # --- Volatility Analysis Section ---
 st.header("Volatility Analysis")

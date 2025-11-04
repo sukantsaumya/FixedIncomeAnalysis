@@ -75,11 +75,34 @@ def load_and_calibrate():
 st.title("📈 Fixed Income Analysis Dashboard")
 st.markdown("An interactive dashboard showcasing the results of the yield curve modeling and risk analysis project.")
 
+# --- Sidebar for user inputs ---
+st.sidebar.header("Model Configuration")
+model_type = st.sidebar.radio(
+    "Yield Curve Model",
+    ["Nelson-Siegel", "Nelson-Siegel-Svensson"],
+    help="Choose between 4-parameter NS and 6-parameter NSS models"
+)
+
+st.sidebar.header("Risk Scenario Controls")
+rate_shock_bps = st.sidebar.slider(
+    "Interest Rate Shock (in basis points)",
+    min_value=-200,
+    max_value=200,
+    value=100,  # Default value
+    step=10
+)
+
 # --- Load data and run the main calibration ---
 # This is called only once thanks to the cache
-final_params, rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params = load_and_calibrate()
+ns_params, ns_rmse, nss_params, nss_rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params = load_and_calibrate()
 
-# --- Sidebar for user inputs ---
+# Select model based on user choice
+if model_type == "Nelson-Siegel":
+    final_params = ns_params
+    rmse = ns_rmse
+else:
+    final_params = nss_params
+    rmse = nss_rmse
 st.sidebar.header("Model Configuration")
 model_type = st.sidebar.radio(
     "Yield Curve Model",

@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from src import yield_curve_model
 from src import analysis
 from src import forecasting
+import data_manager
 
 # =================================================================
 # App Configuration

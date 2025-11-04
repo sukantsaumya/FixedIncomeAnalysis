@@ -324,8 +324,22 @@ else:
     st.warning("GGARCH model could not be fitted with current data.")
 
 with col2:
-    st.header("Relative Value Analysis")
-    st.markdown("Pricing a sample portfolio to find rich/cheap bonds.")
+    st.header("💼 Portfolio Analysis")
+
+    # Educational content about portfolio analysis
+    with st.expander("📚 What is Portfolio Analysis?", expanded=False):
+        st.markdown("""
+        **Relative Value Analysis** helps identify which bonds are:
+
+        - **Rich**: Overpriced compared to theoretical value (sell signal)
+        - **Cheap**: Underpriced compared to theoretical value (buy signal)
+
+        We use yield curve models to calculate what bonds *should* be worth based on market rates.
+        """)
+
+    st.markdown("#### 🎯 Rich/Cheap Analysis")
+    st.markdown("Finding mispriced bonds using our yield curve model...")
+
     # Define our sample portfolio
     portfolio_data = {
         'Bond Name': ['T 2.25 08/15/27', 'T 1.75 11/15/29', 'T 3.00 02/15/34', 'T 4.50 05/15/38'],

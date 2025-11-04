@@ -103,17 +103,6 @@ if model_type == "Nelson-Siegel":
 else:
     final_params = nss_params
     rmse = nss_rmse
-    help="Choose between 4-parameter NS and 6-parameter NSS models"
-)
-
-st.sidebar.header("Risk Scenario Controls")
-rate_shock_bps = st.sidebar.slider(
-    "Interest Rate Shock (in basis points)",
-    min_value=-200,
-    max_value=200,
-    value=100,  # Default value
-    step=10
-)
 
 # --- Display Results ---
 

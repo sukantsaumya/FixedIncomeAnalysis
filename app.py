@@ -75,7 +75,7 @@ st.markdown("An interactive dashboard showcasing the results of the yield curve 
 
 # --- Load data and run the main calibration ---
 # This is called only once thanks to the cache
-final_params, rmse, maturities, market_yields = load_and_calibrate()
+final_params, rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params = load_and_calibrate()
 
 # --- Sidebar for user inputs ---
 st.sidebar.header("Risk Scenario Controls")

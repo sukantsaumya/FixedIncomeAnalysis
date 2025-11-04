@@ -143,6 +143,17 @@ with st.sidebar.expander("💡 What are Basis Points?"):
     *This helps you understand interest rate risk!*
     """)
 
+# Database status information (shown after data is loaded)
+db_info = data_manager.get_database_info()
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📊 Database Status")
+st.sidebar.info(f"**Status**: {db_info.get('status', 'Unknown')}")
+st.sidebar.write(f"📅 Records: {db_info.get('record_count', 'N/A')}")
+if db_info.get('date_range'):
+    st.sidebar.write(f"📈 Range: {db_info['date_range']}")
+if db_info.get('note'):
+    st.sidebar.caption(f"💡 {db_info['note']}")
+
 # --- Load data and run the main calibration ---
 # This is called only once thanks to the cache
 ns_params, ns_rmse, nss_params, nss_rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params = load_and_calibrate()

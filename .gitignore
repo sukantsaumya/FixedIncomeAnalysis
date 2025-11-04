@@ -1,9 +1,43 @@
-# Ignore the secret keys file
-.env
 
-# Ignore Python cache files
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Ignore virtual environment folders (optional but good practice)
+# Virtual Environment
 venv/
 env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+data/treasury_data.db
+data/treasury_data_backup_*.db
+*.log
+.env

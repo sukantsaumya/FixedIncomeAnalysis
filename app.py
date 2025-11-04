@@ -114,13 +114,15 @@ rate_shock_bps = st.sidebar.slider(
 # This is called only once thanks to the cache
 ns_params, ns_rmse, nss_params, nss_rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params = load_and_calibrate()
 
-# Select model based on user choice
+# *** FIX 1: Select the correct model FUNCTION and parameters ***
 if model_type == "Nelson-Siegel":
     final_params = ns_params
     rmse = ns_rmse
+    final_model_func = yield_curve_model.nelson_siegel # <-- Select the function
 else:
     final_params = nss_params
     rmse = nss_rmse
+    final_model_func = yield_curve_model.nelson_siegel_svensson # <-- Select the function
 
 # --- Display Results ---
 
@@ -145,12 +147,8 @@ with col1:
     tau_smooth = np.linspace(0.01, 30, 500)
 
     # Plot based on selected model
-    if model_type == "Nelson-Siegel":
-        yields_smooth = yield_curve_model.nelson_siegel(tau_smooth, *final_params)
-        curve_label = 'Fitted Nelson-Siegel Curve'
-    else:
-        yields_smooth = yield_curve_model.nelson_siegel_svensson(tau_smooth, *final_params)
-        curve_label = 'Fitted Nelson-Siegel-Svensson Curve'
+    yields_smooth = final_model_func(tau_smooth, *final_params) # Use the selected function
+    curve_label = f'Fitted {model_type} Curve'
 
     ax.scatter(maturities, market_yields, color='red', s=80, zorder=5, label='Market Data')
     ax.plot(tau_smooth, yields_smooth, 'b-', linewidth=2, label=curve_label)
@@ -248,7 +246,7 @@ if conditional_vol is not None and garch_params is not None:
         with param_col3:
             st.metric("Beta (GARCH)", f"{garch_params['beta[1]']:.6f}")
 else:
-    st.warning("GARCH model could not be fitted with current data.")
+    st.warning("GGARCH model could not be fitted with current data.")
 
 with col2:
     st.header("Relative Value Analysis")
@@ -264,8 +262,10 @@ with col2:
 
     # Run RV analysis
     rv_df = portfolio_df.copy()
+    
+    # *** FIX 2: Pass the selected 'final_model_func' to the helper ***
     model_prices = rv_df.apply(
-        lambda row: analysis._calculate_bond_price(row['Coupon Rate (%)'], row['Years to Maturity'], final_params),
+        lambda row: analysis._calculate_bond_price(row['Coupon Rate (%)'], row['Years to Maturity'], final_params, final_model_func),
         axis=1
     )
     rv_df['Model Price'] = model_prices
@@ -278,9 +278,11 @@ with col2:
 
     # Run duration analysis based on the slider value
     total_market_value = portfolio_df['Market Price'].sum()
+    
+    # *** FIX 3: Pass the selected 'final_model_func' to the helper ***
     mod_durations = portfolio_df.apply(
         lambda row: analysis._calculate_modified_duration(row['Coupon Rate (%)'], row['Years to Maturity'],
-                                                          final_params),
+                                                            final_params, final_model_func),
         axis=1
     )
     weighted_duration = (mod_durations * portfolio_df['Market Price']).sum() / total_market_value
@@ -292,14 +294,16 @@ with col2:
     # 2. Actual change
     shocked_params = final_params.copy()
     shocked_params[0] += (rate_shock_bps / 100)
+    
+    # *** FIX 4: Pass the selected 'final_model_func' to the helper ***
     actual_new_value = portfolio_df.apply(
-        lambda row: analysis._calculate_bond_price(row['Coupon Rate (%)'], row['Years to Maturity'], shocked_params),
+        lambda row: analysis._calculate_bond_price(row['Coupon Rate (%)'], row['Years to Maturity'], shocked_params, final_model_func),
         axis=1
     ).sum()
 
     # Display the results in columns
     scen_col1, scen_col2 = st.columns(2)
     scen_col1.metric("Estimated New Value", f"${estimated_new_value:,.2f}",
-                     f"{(estimated_change_pct * 100):.2f}% change")
+                       f"{(estimated_change_pct * 100):.2f}% change")
     scen_col2.metric("Actual New Value (Re-Priced)", f"${actual_new_value:,.2f}",
-                     f"{(actual_new_value / total_market_value - 1) * 100:.2f}% change")
+                       f"{(actual_new_value / total_market_value - 1) * 100:.2f}% change")

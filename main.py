@@ -10,32 +10,28 @@ from src import analysis
 from src import forecasting
 import data_manager
 
-def fetch_and_clean_data():
+def get_data_from_database():
     """
-    Fetches and prepares the Treasury data from FRED, securely loading
-    the API key from a .env file.
+    Get Treasury data from SQLite database with automatic updates.
     """
-    # This line loads the variables from your .env file into the environment
-    load_dotenv()
-    
-    # This retrieves the key. It returns None if the key is not found.
-    api_key = os.getenv("FRED_API_KEY")
-    
-    # A check to ensure the key was loaded correctly
-    if not api_key:
-        raise ValueError("FRED_API_KEY not found. Please create a .env file with your key.")
-    
-    print("Fetching data from FRED... (This may take a moment)")
-    start_date = datetime.datetime(2010, 1, 1)
-    end_date = datetime.datetime.today()
-    
-    series_ids = ['DGS1MO', 'DGS3MO', 'DGS6MO', 'DGS1', 'DGS2', 'DGS5', 'DGS10', 'DGS30']
-    
-    # Pass the loaded api_key to the function call
-    df = web.DataReader(series_ids, 'fred', start_date, end_date, api_key=api_key)
-    
-    df_cleaned = df.ffill().dropna()
-    print("Data successfully fetched and cleaned.")
+    print("Accessing Treasury data database...")
+
+    # Check database status
+    db_info = data_manager.get_database_info()
+    print(f"Database status: {db_info['status']}")
+
+    if db_info['status'] == 'Database not found':
+        print("Database not found. Initializing with historical data...")
+        df_cleaned = data_manager.initialize_database()
+    else:
+        print(f"Database found: {db_info['record_count']} records ({db_info['date_range']})")
+        print("Checking for updates...")
+        df_cleaned = data_manager.refresh_database()
+
+    if df_cleaned is None or df_cleaned.empty:
+        raise ValueError("Failed to obtain data from database")
+
+    print(f"Data successfully loaded from database ({len(df_cleaned)} records)")
     return df_cleaned
 
 def main():

@@ -76,9 +76,10 @@ def main():
 
     # --- Phase 4: Forecasting ---
     print("\n" + "="*50)
-    print("Phase 4: Building Forecasting Model")
+    print("Phase 4: Building AR and GARCH Forecasting Models")
     print("="*50)
     forecasting.run_autoregressive_forecast(df_cleaned)
+    forecasting.run_garch_model(df_cleaned)
     
     print("\n" + "="*50)
     print("Project Pipeline Complete.")

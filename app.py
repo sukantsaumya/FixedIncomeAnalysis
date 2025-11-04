@@ -104,11 +104,22 @@ st.markdown("---")
 
 # --- Sidebar for user inputs ---
 st.sidebar.header("Model Configuration")
+# Model Configuration with educational content
+st.sidebar.markdown("### 📈 Yield Curve Model")
 model_type = st.sidebar.radio(
-    "Yield Curve Model",
+    "Choose Analysis Model",
     ["Nelson-Siegel", "Nelson-Siegel-Svensson"],
     help="Choose between 4-parameter NS and 6-parameter NSS models"
 )
+
+with st.sidebar.expander("🔍 Model Explanation"):
+    st.markdown("""
+    **Nelson-Siegel (4-parameter)**: Classic model, good for normal yield curves
+
+    **Nelson-Siegel-Svensson (6-parameter)**: Advanced model, better for complex curves with multiple humps
+
+    *Lower RMSE = Better fit to market data*
+    """)
 
 # Database status information
 # Initialize database first to get accurate status

@@ -134,14 +134,27 @@ if db_info.get('date_range'):
 if db_info.get('note'):
     st.sidebar.caption(f"💡 {db_info['note']}")
 
-st.sidebar.header("Risk Scenario Controls")
+# Risk Scenario Controls with educational content
+st.sidebar.markdown("### ⚠️ Risk Scenarios")
 rate_shock_bps = st.sidebar.slider(
-    "Interest Rate Shock (in basis points)",
+    "Interest Rate Change (basis points)",
     min_value=-200,
     max_value=200,
     value=100,  # Default value
-    step=10
+    step=10,
+    help="100 basis points = 1% change in interest rates"
 )
+
+with st.sidebar.expander("💡 What are Basis Points?"):
+    st.markdown("""
+    **100 basis points = 1%**
+
+    **+100 bps**: Interest rates increase by 1% (bond prices go down)
+
+    **-100 bps**: Interest rates decrease by 1% (bond prices go up)
+
+    *This helps you understand interest rate risk!*
+    """)
 
 # --- Load data and run the main calibration ---
 # This is called only once thanks to the cache

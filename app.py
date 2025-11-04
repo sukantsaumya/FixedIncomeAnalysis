@@ -103,10 +103,6 @@ if model_type == "Nelson-Siegel":
 else:
     final_params = nss_params
     rmse = nss_rmse
-st.sidebar.header("Model Configuration")
-model_type = st.sidebar.radio(
-    "Yield Curve Model",
-    ["Nelson-Siegel", "Nelson-Siegel-Svensson"],
     help="Choose between 4-parameter NS and 6-parameter NSS models"
 )
 

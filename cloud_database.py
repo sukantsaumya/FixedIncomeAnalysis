@@ -151,7 +151,7 @@ def refresh_database():
     For cloud deployment, this returns the cached sample data.
     In a real deployment, this would fetch from FRED API.
     """
-    return get_data_for_cloud()
+    return get_data_for_analysis()
 
 def initialize_database():
     """

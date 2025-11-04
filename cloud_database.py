@@ -17,7 +17,7 @@ if 'db_initialized' not in st.session_state:
 if 'database_data' not in st.session_state:
     st.session_state.database_data = None
 
-def get_data_for_cloud():
+def get_data_for_analysis():
     """
     Get Treasury data with cloud-optimized initialization.
     Creates sample data on first run, then uses cached version.

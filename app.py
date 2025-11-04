@@ -121,19 +121,6 @@ with st.sidebar.expander("🔍 Model Explanation"):
     *Lower RMSE = Better fit to market data*
     """)
 
-# Database status information
-# Initialize database first to get accurate status
-if 'db_initialized' not in st.session_state:
-    data_manager.get_data_for_analysis()  # This will initialize the database
-
-db_info = data_manager.get_database_info()
-st.sidebar.info(f"📊 **Data Status**: {db_info.get('status', 'Unknown')}")
-st.sidebar.write(f"📅 Records: {db_info.get('record_count', 'N/A')}")
-if db_info.get('date_range'):
-    st.sidebar.write(f"📈 Range: {db_info['date_range']}")
-if db_info.get('note'):
-    st.sidebar.caption(f"💡 {db_info['note']}")
-
 # Risk Scenario Controls with educational content
 st.sidebar.markdown("### ⚠️ Risk Scenarios")
 rate_shock_bps = st.sidebar.slider(

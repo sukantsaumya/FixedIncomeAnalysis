@@ -3,14 +3,12 @@
 import pandas as pd
 import numpy as np
 import datetime
-import pandas_datareader.data as web
-import os                  # <-- ADDED
-from dotenv import load_dotenv # <-- ADDED
 
 # Import our custom modules
 from src import yield_curve_model
 from src import analysis
 from src import forecasting
+import data_manager
 
 def fetch_and_clean_data():
     """

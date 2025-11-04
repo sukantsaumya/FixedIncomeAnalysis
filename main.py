@@ -56,9 +56,35 @@ def main():
 
     # --- Phase 2: Yield Curve Calibration ---
     print("\n" + "="*50)
-    print("Phase 2: Calibrating Nelson-Siegel Model")
+    print("Phase 2: Yield Curve Calibration: NS and NSS Models")
     print("="*50)
-    final_params, rmse = yield_curve_model.calibrate_yield_curve(maturities, market_yields)
+
+    # Nelson-Siegel calibration
+    print("Calibrating Nelson-Siegel (4-parameter) model...")
+    ns_params, ns_rmse = yield_curve_model.calibrate_yield_curve(maturities, market_yields)
+
+    # Nelson-Siegel-Svensson calibration
+    print("\nCalibrating Nelson-Siegel-Svensson (6-parameter) model...")
+    nss_params, nss_rmse = yield_curve_model.calibrate_svensson_model(maturities, market_yields)
+
+    # Print comparison summary
+    print("\n--- Model Comparison Summary ---")
+    print(f"Nelson-Siegel RMSE: {ns_rmse:.4f} bps")
+    print(f"Nelson-Siegel-Svensson RMSE: {nss_rmse:.4f} bps")
+
+    if nss_rmse < ns_rmse:
+        improvement = (ns_rmse - nss_rmse) / ns_rmse * 100
+        print(f"NSS model improvement: {improvement:.2f}% better fit")
+        final_params = nss_params
+        rmse = nss_rmse
+        preferred_model = "NSS"
+    else:
+        print("NS model preferred (better or equal fit)")
+        final_params = ns_params
+        rmse = ns_rmse
+        preferred_model = "NS"
+
+    print(f"Using {preferred_model} model for subsequent analysis")
 
     # --- Phase 3: Portfolio Analysis ---
     print("\n" + "="*50)

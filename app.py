@@ -411,3 +411,45 @@ with col2:
                        f"{(estimated_change_pct * 100):.2f}% change")
     scen_col2.metric("Actual New Value (Re-Priced)", f"${actual_new_value:,.2f}",
                        f"{(actual_new_value / total_market_value - 1) * 100:.2f}% change")
+
+st.markdown("---")
+
+# Final summary section
+st.header("📋 Summary & Key Insights")
+
+col_summary1, col_summary2, col_summary3 = st.columns(3)
+
+with col_summary1:
+    st.metric("📊 Best Model", model_type, help="Model with lowest RMSE")
+    st.metric("🎯 Model Accuracy", f"{rmse:.2f} bps", help="Lower is better")
+
+with col_summary2:
+    if conditional_vol is not None and garch_params is not None:
+        st.metric("📈 Current Volatility", f"{conditional_vol.iloc[-1]:.3f}%")
+        persistence = garch_params['alpha[1]'] + garch_params['beta[1]']
+        st.metric("🔄 Volatility Persistence", f"{persistence:.3f}", help="How long volatility shocks last")
+
+with col_summary3:
+    st.metric("💰 Portfolio Value", f"${total_market_value:,.2f}")
+    rate_impact = (actual_new_value / total_market_value - 1) * 100
+    st.metric("⚠️ Rate Impact", f"{rate_impact:.2f}%", help=f"From {rate_shock_bps} bps change")
+
+# Educational conclusion
+st.markdown("""
+### 🎓 What This Analysis Shows
+
+This dashboard demonstrates professional **quantitative finance** techniques used by:
+
+- **Investment banks** for pricing and risk management
+- **Hedge funds** for trading strategies
+- **Asset managers** for portfolio optimization
+- **Central banks** for monetary policy analysis
+
+**Key takeaways:**
+1. **Yield curves** reveal market expectations about future interest rates
+2. **Volatility models** help quantify and predict market risk
+3. **Duration analysis** shows how interest rate changes affect bond portfolios
+4. **Model selection** matters - advanced models can provide better accuracy
+
+This is the type of analysis that drives multi-trillion dollar bond markets globally!
+""")

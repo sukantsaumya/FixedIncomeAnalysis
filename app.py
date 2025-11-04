@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 # Import the backend logic from our 'src' folder
 from src import yield_curve_model
 from src import analysis
+from src import forecasting
 
 # =================================================================
 # App Configuration

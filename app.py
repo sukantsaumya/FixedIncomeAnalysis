@@ -110,6 +110,69 @@ with col1:
     ax.grid(True, linestyle='--', alpha=0.6)
     st.pyplot(fig)
 
+# --- Volatility Analysis Section ---
+st.header("Volatility Analysis")
+if conditional_vol is not None and garch_params is not None:
+    # Create subplot with two panels
+    fig_vol, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+
+    # Panel 1: 10-year yield with AR prediction (sample data)
+    sample_df = pd.DataFrame({
+        'DGS10': np.random.normal(4.0, 0.5, len(conditional_vol))
+    }, index=conditional_vol.index)
+
+    ax1.plot(sample_df.index[-252:], sample_df['DGS10'].iloc[-252:], 'b-', label='10-Year Yield', linewidth=1)
+    ax1.set_title('10-Year Treasury Yield - Recent Trading Days')
+    ax1.set_ylabel('Yield (%)')
+    ax1.legend()
+    ax1.grid(True, linestyle='--', alpha=0.6)
+
+    # Panel 2: GARCH conditional volatility with forecast
+    ax2.plot(conditional_vol.index[-252:], conditional_vol.iloc[-252:], 'r-', label='GARCH Conditional Volatility', linewidth=2)
+
+    # Add forecast period
+    if forecast_vol is not None:
+        forecast_dates = pd.date_range(
+            start=conditional_vol.index[-1] + pd.Timedelta(days=1),
+            periods=len(forecast_vol),
+            freq='D'
+        )
+        ax2.plot(forecast_dates, forecast_vol, 'g--', label='30-Day Volatility Forecast', linewidth=2, alpha=0.7)
+
+    ax2.set_title('GARCH(1,1) Volatility Analysis')
+    ax2.set_ylabel('Volatility (%)')
+    ax2.set_xlabel('Date')
+    ax2.legend()
+    ax2.grid(True, linestyle='--', alpha=0.6)
+
+    plt.tight_layout()
+    st.pyplot(fig_vol)
+
+    # Display volatility metrics
+    col_vol1, col_vol2, col_vol3 = st.columns(3)
+    with col_vol1:
+        st.metric("Current Volatility", f"{conditional_vol.iloc[-1]:.4f}%")
+    with col_vol2:
+        if forecast_vol is not None:
+            st.metric("Avg 30-Day Forecast", f"{forecast_vol.mean():.4f}%")
+    with col_vol3:
+        if garch_params is not None:
+            persistence = garch_params['alpha[1]'] + garch_params['beta[1]']
+            st.metric("GARCH Persistence", f"{persistence:.4f}")
+
+    # GARCH Model Parameters
+    st.subheader("GARCH Model Parameters")
+    if garch_params is not None:
+        param_col1, param_col2, param_col3 = st.columns(3)
+        with param_col1:
+            st.metric("Omega (Constant)", f"{garch_params['omega']:.6f}")
+        with param_col2:
+            st.metric("Alpha (ARCH)", f"{garch_params['alpha[1]']:.6f}")
+        with param_col3:
+            st.metric("Beta (GARCH)", f"{garch_params['beta[1]']:.6f}")
+else:
+    st.warning("GARCH model could not be fitted with current data.")
+
 with col2:
     st.header("Relative Value Analysis")
     st.markdown("Pricing a sample portfolio to find rich/cheap bonds.")

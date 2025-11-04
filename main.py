@@ -3,41 +3,35 @@
 import pandas as pd
 import numpy as np
 import datetime
-import pandas_datareader.data as web
-import os                  # <-- ADDED
-from dotenv import load_dotenv # <-- ADDED
 
 # Import our custom modules
 from src import yield_curve_model
 from src import analysis
 from src import forecasting
+import data_manager
 
-def fetch_and_clean_data():
+def get_data_from_database():
     """
-    Fetches and prepares the Treasury data from FRED, securely loading
-    the API key from a .env file.
+    Get Treasury data from SQLite database with automatic updates.
     """
-    # This line loads the variables from your .env file into the environment
-    load_dotenv()
-    
-    # This retrieves the key. It returns None if the key is not found.
-    api_key = os.getenv("FRED_API_KEY")
-    
-    # A check to ensure the key was loaded correctly
-    if not api_key:
-        raise ValueError("FRED_API_KEY not found. Please create a .env file with your key.")
-    
-    print("Fetching data from FRED... (This may take a moment)")
-    start_date = datetime.datetime(2010, 1, 1)
-    end_date = datetime.datetime.today()
-    
-    series_ids = ['DGS1MO', 'DGS3MO', 'DGS6MO', 'DGS1', 'DGS2', 'DGS5', 'DGS10', 'DGS30']
-    
-    # Pass the loaded api_key to the function call
-    df = web.DataReader(series_ids, 'fred', start_date, end_date, api_key=api_key)
-    
-    df_cleaned = df.ffill().dropna()
-    print("Data successfully fetched and cleaned.")
+    print("Accessing Treasury data database...")
+
+    # Check database status
+    db_info = data_manager.get_database_info()
+    print(f"Database status: {db_info['status']}")
+
+    if db_info['status'] == 'Database not found':
+        print("Database not found. Initializing with historical data...")
+        df_cleaned = data_manager.initialize_database()
+    else:
+        print(f"Database found: {db_info['record_count']} records ({db_info['date_range']})")
+        print("Checking for updates...")
+        df_cleaned = data_manager.refresh_database()
+
+    if df_cleaned is None or df_cleaned.empty:
+        raise ValueError("Failed to obtain data from database")
+
+    print(f"Data successfully loaded from database ({len(df_cleaned)} records)")
     return df_cleaned
 
 def main():
@@ -47,7 +41,7 @@ def main():
     print("="*50)
 
     # --- Phase 1: Data ---
-    df_cleaned = fetch_and_clean_data()
+    df_cleaned = get_data_from_database()
     
     # Prepare data for calibration (using the most recent day)
     latest_yields = df_cleaned.iloc[-1]
@@ -56,9 +50,35 @@ def main():
 
     # --- Phase 2: Yield Curve Calibration ---
     print("\n" + "="*50)
-    print("Phase 2: Calibrating Nelson-Siegel Model")
+    print("Phase 2: Yield Curve Calibration: NS and NSS Models")
     print("="*50)
-    final_params, rmse = yield_curve_model.calibrate_yield_curve(maturities, market_yields)
+
+    # Nelson-Siegel calibration
+    print("Calibrating Nelson-Siegel (4-parameter) model...")
+    ns_params, ns_rmse = yield_curve_model.calibrate_yield_curve(maturities, market_yields)
+
+    # Nelson-Siegel-Svensson calibration
+    print("\nCalibrating Nelson-Siegel-Svensson (6-parameter) model...")
+    nss_params, nss_rmse = yield_curve_model.calibrate_svensson_model(maturities, market_yields)
+
+    # Print comparison summary
+    print("\n--- Model Comparison Summary ---")
+    print(f"Nelson-Siegel RMSE: {ns_rmse:.4f} bps")
+    print(f"Nelson-Siegel-Svensson RMSE: {nss_rmse:.4f} bps")
+
+    if nss_rmse < ns_rmse:
+        improvement = (ns_rmse - nss_rmse) / ns_rmse * 100
+        print(f"NSS model improvement: {improvement:.2f}% better fit")
+        final_params = nss_params
+        rmse = nss_rmse
+        preferred_model = "NSS"
+    else:
+        print("NS model preferred (better or equal fit)")
+        final_params = ns_params
+        rmse = ns_rmse
+        preferred_model = "NS"
+
+    print(f"Using {preferred_model} model for subsequent analysis")
 
     # --- Phase 3: Portfolio Analysis ---
     print("\n" + "="*50)
@@ -76,9 +96,10 @@ def main():
 
     # --- Phase 4: Forecasting ---
     print("\n" + "="*50)
-    print("Phase 4: Building Forecasting Model")
+    print("Phase 4: Building AR and GARCH Forecasting Models")
     print("="*50)
     forecasting.run_autoregressive_forecast(df_cleaned)
+    forecasting.run_garch_model(df_cleaned)
     
     print("\n" + "="*50)
     print("Project Pipeline Complete.")

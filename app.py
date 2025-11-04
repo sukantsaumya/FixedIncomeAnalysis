@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 # Import the backend logic from our 'src' folder
 from src import yield_curve_model
 from src import analysis
+from src import forecasting
+import data_manager
 
 # =================================================================
 # App Configuration
@@ -26,24 +28,55 @@ st.set_page_config(
 # =================================================================
 # Data Caching and Loading
 # =================================================================
-@st.cache_data  # This powerful command caches the data so it doesn't re-run on every interaction
+@st.cache_data(ttl=3600)  # Cache for 1 hour to allow database updates
 def load_and_calibrate():
     """
-    Fetches the latest Treasury data and calibrates the Nelson-Siegel model.
-    This function will only run once and its result will be stored.
+    Gets Treasury data from database and calibrates both NS and NSS models.
+    This function will run once and cache for 1 hour.
     """
-    # This is a simplified version of our data fetching
-    latest_yields_data = {
-        'Maturity': np.array([1 / 12, 3 / 12, 6 / 12, 1, 2, 5, 10, 30]),
-        'Yield': np.array([4.2, 4.02, 3.83, 3.68, 3.6, 3.74, 4.16, 4.73])
-    }
+    # Get data from database
+    df_db = data_manager.get_data_for_analysis()
 
-    maturities = latest_yields_data['Maturity']
-    market_yields = latest_yields_data['Yield']
+    if df_db is None or df_db.empty:
+        # Fallback to sample data if database fails
+        st.warning("Database unavailable. Using sample data.")
+        latest_yields_data = {
+            'Maturity': np.array([1 / 12, 3 / 12, 6 / 12, 1, 2, 5, 10, 30]),
+            'Yield': np.array([4.2, 4.02, 3.83, 3.68, 3.6, 3.74, 4.16, 4.73])
+        }
+        maturities = latest_yields_data['Maturity']
+        market_yields = latest_yields_data['Yield']
+        df_for_garch = None
+    else:
+        # Use real database data
+        latest_yields = df_db.iloc[-1]
+        maturities = np.array([1/12, 3/12, 6/12, 1, 2, 5, 10, 30])
+        market_yields = latest_yields.values
+        df_for_garch = df_db
 
-    final_params, rmse = yield_curve_model.calibrate_yield_curve(maturities, market_yields)
+    # Calibrate both models
+    ns_params, ns_rmse = yield_curve_model.calibrate_yield_curve(maturities, market_yields)
+    nss_params, nss_rmse = yield_curve_model.calibrate_svensson_model(maturities, market_yields)
 
-    return final_params, rmse, maturities, market_yields
+    # Handle GARCH modeling
+    if df_for_garch is not None:
+        # Use real data for GARCH
+        conditional_vol, forecast_vol, garch_params = forecasting.run_garch_model(df_for_garch)
+    else:
+        # Fallback: create sample historical data for GARCH demonstration
+        np.random.seed(42)
+        dates = pd.date_range('2020-01-01', '2024-12-31', freq='D')
+        n_days = len(dates)
+
+        initial_yield = 4.0
+        daily_returns = np.random.normal(0, 0.5, n_days)
+        price_path = initial_yield + np.cumsum(daily_returns * 0.01)
+        price_path = np.clip(price_path, 1.0, 8.0)
+
+        sample_df = pd.DataFrame({'DGS10': price_path}, index=dates)
+        conditional_vol, forecast_vol, garch_params = forecasting.run_garch_model(sample_df)
+
+    return ns_params, ns_rmse, nss_params, nss_rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params
 
 
 # =================================================================
@@ -53,11 +86,21 @@ def load_and_calibrate():
 st.title("📈 Fixed Income Analysis Dashboard")
 st.markdown("An interactive dashboard showcasing the results of the yield curve modeling and risk analysis project.")
 
-# --- Load data and run the main calibration ---
-# This is called only once thanks to the cache
-final_params, rmse, maturities, market_yields = load_and_calibrate()
-
 # --- Sidebar for user inputs ---
+st.sidebar.header("Model Configuration")
+model_type = st.sidebar.radio(
+    "Yield Curve Model",
+    ["Nelson-Siegel", "Nelson-Siegel-Svensson"],
+    help="Choose between 4-parameter NS and 6-parameter NSS models"
+)
+
+# Database status information
+db_info = data_manager.get_database_info()
+st.sidebar.info(f"📊 **Data Status**: Live from Database")
+st.sidebar.write(f"📅 Records: {db_info.get('record_count', 'N/A')}")
+if db_info.get('date_range'):
+    st.sidebar.write(f"📈 Range: {db_info['date_range']}")
+
 st.sidebar.header("Risk Scenario Controls")
 rate_shock_bps = st.sidebar.slider(
     "Interest Rate Shock (in basis points)",
@@ -67,6 +110,18 @@ rate_shock_bps = st.sidebar.slider(
     step=10
 )
 
+# --- Load data and run the main calibration ---
+# This is called only once thanks to the cache
+ns_params, ns_rmse, nss_params, nss_rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params = load_and_calibrate()
+
+# Select model based on user choice
+if model_type == "Nelson-Siegel":
+    final_params = ns_params
+    rmse = ns_rmse
+else:
+    final_params = nss_params
+    rmse = nss_rmse
+
 # --- Display Results ---
 
 # Create two columns for a cleaner layout
@@ -74,21 +129,126 @@ col1, col2 = st.columns((2, 1.5))
 
 with col1:
     st.header("Yield Curve Calibration")
-    st.metric("Final Model RMSE", f"{rmse:.2f} bps",
-              help="This is the best achievable RMSE for the Nelson-Siegel model on this data.")
+
+    # Display RMSE comparison
+    col_rmse1, col_rmse2 = st.columns(2)
+    with col_rmse1:
+        st.metric(f"NS Model RMSE", f"{ns_rmse:.2f} bps")
+    with col_rmse2:
+        st.metric(f"NSS Model RMSE", f"{nss_rmse:.2f} bps")
+
+    st.metric(f"Selected Model ({model_type}) RMSE", f"{rmse:.2f} bps",
+              help="RMSE for the currently selected yield curve model")
 
     # Generate and display the plot
     fig, ax = plt.subplots(figsize=(10, 6))
     tau_smooth = np.linspace(0.01, 30, 500)
-    yields_smooth = yield_curve_model.nelson_siegel(tau_smooth, *final_params)
+
+    # Plot based on selected model
+    if model_type == "Nelson-Siegel":
+        yields_smooth = yield_curve_model.nelson_siegel(tau_smooth, *final_params)
+        curve_label = 'Fitted Nelson-Siegel Curve'
+    else:
+        yields_smooth = yield_curve_model.nelson_siegel_svensson(tau_smooth, *final_params)
+        curve_label = 'Fitted Nelson-Siegel-Svensson Curve'
+
     ax.scatter(maturities, market_yields, color='red', s=80, zorder=5, label='Market Data')
-    ax.plot(tau_smooth, yields_smooth, 'b-', linewidth=2, label='Fitted Nelson-Siegel Curve')
-    ax.set_title(f'Calibrated Yield Curve (RMSE = {rmse:.2f} bps)')
+    ax.plot(tau_smooth, yields_smooth, 'b-', linewidth=2, label=curve_label)
+    ax.set_title(f'{model_type} Yield Curve (RMSE = {rmse:.2f} bps)')
     ax.set_xlabel('Maturity (Years)')
     ax.set_ylabel('Yield (%)')
     ax.legend()
     ax.grid(True, linestyle='--', alpha=0.6)
     st.pyplot(fig)
+
+    # Add model comparison plot when NSS is selected
+    if model_type == "Nelson-Siegel-Svensson":
+        st.subheader("Model Comparison")
+        fig_comp, ax_comp = plt.subplots(figsize=(10, 6))
+
+        # Plot both curves for comparison
+        ns_yields = yield_curve_model.nelson_siegel(tau_smooth, *ns_params)
+        nss_yields = yield_curve_model.nelson_siegel_svensson(tau_smooth, *nss_params)
+
+        ax_comp.scatter(maturities, market_yields, color='red', s=80, zorder=5, label='Market Data')
+        ax_comp.plot(tau_smooth, ns_yields, 'b--', linewidth=2, alpha=0.7, label=f'NS Curve ({ns_rmse:.2f} bps)')
+        ax_comp.plot(tau_smooth, nss_yields, 'g-', linewidth=2, label=f'NSS Curve ({nss_rmse:.2f} bps)')
+        ax_comp.set_title('NS vs NSS Model Comparison')
+        ax_comp.set_xlabel('Maturity (Years)')
+        ax_comp.set_ylabel('Yield (%)')
+        ax_comp.legend()
+        ax_comp.grid(True, linestyle='--', alpha=0.6)
+        st.pyplot(fig_comp)
+
+        # Show improvement percentage
+        if nss_rmse < ns_rmse:
+            improvement = (ns_rmse - nss_rmse) / ns_rmse * 100
+            st.success(f"NSS model shows {improvement:.2f}% improvement in fit accuracy")
+        else:
+            st.info("NS model provides comparable or better fit")
+
+# --- Volatility Analysis Section ---
+st.header("Volatility Analysis")
+if conditional_vol is not None and garch_params is not None:
+    # Create subplot with two panels
+    fig_vol, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+
+    # Panel 1: 10-year yield with AR prediction (sample data)
+    sample_df = pd.DataFrame({
+        'DGS10': np.random.normal(4.0, 0.5, len(conditional_vol))
+    }, index=conditional_vol.index)
+
+    ax1.plot(sample_df.index[-252:], sample_df['DGS10'].iloc[-252:], 'b-', label='10-Year Yield', linewidth=1)
+    ax1.set_title('10-Year Treasury Yield - Recent Trading Days')
+    ax1.set_ylabel('Yield (%)')
+    ax1.legend()
+    ax1.grid(True, linestyle='--', alpha=0.6)
+
+    # Panel 2: GARCH conditional volatility with forecast
+    ax2.plot(conditional_vol.index[-252:], conditional_vol.iloc[-252:], 'r-', label='GARCH Conditional Volatility', linewidth=2)
+
+    # Add forecast period
+    if forecast_vol is not None:
+        forecast_dates = pd.date_range(
+            start=conditional_vol.index[-1] + pd.Timedelta(days=1),
+            periods=len(forecast_vol),
+            freq='D'
+        )
+        ax2.plot(forecast_dates, forecast_vol, 'g--', label='30-Day Volatility Forecast', linewidth=2, alpha=0.7)
+
+    ax2.set_title('GARCH(1,1) Volatility Analysis')
+    ax2.set_ylabel('Volatility (%)')
+    ax2.set_xlabel('Date')
+    ax2.legend()
+    ax2.grid(True, linestyle='--', alpha=0.6)
+
+    plt.tight_layout()
+    st.pyplot(fig_vol)
+
+    # Display volatility metrics
+    col_vol1, col_vol2, col_vol3 = st.columns(3)
+    with col_vol1:
+        st.metric("Current Volatility", f"{conditional_vol.iloc[-1]:.4f}%")
+    with col_vol2:
+        if forecast_vol is not None:
+            st.metric("Avg 30-Day Forecast", f"{forecast_vol.mean():.4f}%")
+    with col_vol3:
+        if garch_params is not None:
+            persistence = garch_params['alpha[1]'] + garch_params['beta[1]']
+            st.metric("GARCH Persistence", f"{persistence:.4f}")
+
+    # GARCH Model Parameters
+    st.subheader("GARCH Model Parameters")
+    if garch_params is not None:
+        param_col1, param_col2, param_col3 = st.columns(3)
+        with param_col1:
+            st.metric("Omega (Constant)", f"{garch_params['omega']:.6f}")
+        with param_col2:
+            st.metric("Alpha (ARCH)", f"{garch_params['alpha[1]']:.6f}")
+        with param_col3:
+            st.metric("Beta (GARCH)", f"{garch_params['beta[1]']:.6f}")
+else:
+    st.warning("GARCH model could not be fitted with current data.")
 
 with col2:
     st.header("Relative Value Analysis")

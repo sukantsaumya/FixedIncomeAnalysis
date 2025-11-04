@@ -44,7 +44,26 @@ def load_and_calibrate():
 
     final_params, rmse = yield_curve_model.calibrate_yield_curve(maturities, market_yields)
 
-    return final_params, rmse, maturities, market_yields
+    # Create sample historical data for GARCH demonstration
+    np.random.seed(42)  # For reproducible results
+    dates = pd.date_range('2020-01-01', '2024-12-31', freq='D')
+    n_days = len(dates)
+
+    # Simulate realistic 10-year yield with volatility
+    initial_yield = 4.0
+    daily_returns = np.random.normal(0, 0.5, n_days)  # 0.5% daily vol
+    price_path = initial_yield + np.cumsum(daily_returns * 0.01)  # Scale down for yield movement
+    price_path = np.clip(price_path, 1.0, 8.0)  # Keep yields in realistic range
+
+    # Create DataFrame for GARCH model
+    sample_df = pd.DataFrame({
+        'DGS10': price_path
+    }, index=dates)
+
+    # Run GARCH model on sample data
+    conditional_vol, forecast_vol, garch_params = forecasting.run_garch_model(sample_df)
+
+    return final_params, rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params
 
 
 # =================================================================

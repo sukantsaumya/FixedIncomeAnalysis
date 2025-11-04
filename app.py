@@ -28,43 +28,53 @@ st.set_page_config(
 # =================================================================
 # Data Caching and Loading
 # =================================================================
-@st.cache_data  # This powerful command caches the data so it doesn't re-run on every interaction
+@st.cache_data(ttl=3600)  # Cache for 1 hour to allow database updates
 def load_and_calibrate():
     """
-    Fetches the latest Treasury data and calibrates both NS and NSS models.
-    This function will only run once and its result will be stored.
+    Gets Treasury data from database and calibrates both NS and NSS models.
+    This function will run once and cache for 1 hour.
     """
-    # This is a simplified version of our data fetching
-    latest_yields_data = {
-        'Maturity': np.array([1 / 12, 3 / 12, 6 / 12, 1, 2, 5, 10, 30]),
-        'Yield': np.array([4.2, 4.02, 3.83, 3.68, 3.6, 3.74, 4.16, 4.73])
-    }
+    # Get data from database
+    df_db = data_manager.get_data_for_analysis()
 
-    maturities = latest_yields_data['Maturity']
-    market_yields = latest_yields_data['Yield']
+    if df_db is None or df_db.empty:
+        # Fallback to sample data if database fails
+        st.warning("Database unavailable. Using sample data.")
+        latest_yields_data = {
+            'Maturity': np.array([1 / 12, 3 / 12, 6 / 12, 1, 2, 5, 10, 30]),
+            'Yield': np.array([4.2, 4.02, 3.83, 3.68, 3.6, 3.74, 4.16, 4.73])
+        }
+        maturities = latest_yields_data['Maturity']
+        market_yields = latest_yields_data['Yield']
+        df_for_garch = None
+    else:
+        # Use real database data
+        latest_yields = df_db.iloc[-1]
+        maturities = np.array([1/12, 3/12, 6/12, 1, 2, 5, 10, 30])
+        market_yields = latest_yields.values
+        df_for_garch = df_db
 
     # Calibrate both models
     ns_params, ns_rmse = yield_curve_model.calibrate_yield_curve(maturities, market_yields)
     nss_params, nss_rmse = yield_curve_model.calibrate_svensson_model(maturities, market_yields)
 
-    # Create sample historical data for GARCH demonstration
-    np.random.seed(42)  # For reproducible results
-    dates = pd.date_range('2020-01-01', '2024-12-31', freq='D')
-    n_days = len(dates)
+    # Handle GARCH modeling
+    if df_for_garch is not None:
+        # Use real data for GARCH
+        conditional_vol, forecast_vol, garch_params = forecasting.run_garch_model(df_for_garch)
+    else:
+        # Fallback: create sample historical data for GARCH demonstration
+        np.random.seed(42)
+        dates = pd.date_range('2020-01-01', '2024-12-31', freq='D')
+        n_days = len(dates)
 
-    # Simulate realistic 10-year yield with volatility
-    initial_yield = 4.0
-    daily_returns = np.random.normal(0, 0.5, n_days)  # 0.5% daily vol
-    price_path = initial_yield + np.cumsum(daily_returns * 0.01)  # Scale down for yield movement
-    price_path = np.clip(price_path, 1.0, 8.0)  # Keep yields in realistic range
+        initial_yield = 4.0
+        daily_returns = np.random.normal(0, 0.5, n_days)
+        price_path = initial_yield + np.cumsum(daily_returns * 0.01)
+        price_path = np.clip(price_path, 1.0, 8.0)
 
-    # Create DataFrame for GARCH model
-    sample_df = pd.DataFrame({
-        'DGS10': price_path
-    }, index=dates)
-
-    # Run GARCH model on sample data
-    conditional_vol, forecast_vol, garch_params = forecasting.run_garch_model(sample_df)
+        sample_df = pd.DataFrame({'DGS10': price_path}, index=dates)
+        conditional_vol, forecast_vol, garch_params = forecasting.run_garch_model(sample_df)
 
     return ns_params, ns_rmse, nss_params, nss_rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params
 

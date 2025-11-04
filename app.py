@@ -30,7 +30,7 @@ st.set_page_config(
 @st.cache_data  # This powerful command caches the data so it doesn't re-run on every interaction
 def load_and_calibrate():
     """
-    Fetches the latest Treasury data and calibrates the Nelson-Siegel model.
+    Fetches the latest Treasury data and calibrates both NS and NSS models.
     This function will only run once and its result will be stored.
     """
     # This is a simplified version of our data fetching
@@ -42,7 +42,9 @@ def load_and_calibrate():
     maturities = latest_yields_data['Maturity']
     market_yields = latest_yields_data['Yield']
 
-    final_params, rmse = yield_curve_model.calibrate_yield_curve(maturities, market_yields)
+    # Calibrate both models
+    ns_params, ns_rmse = yield_curve_model.calibrate_yield_curve(maturities, market_yields)
+    nss_params, nss_rmse = yield_curve_model.calibrate_svensson_model(maturities, market_yields)
 
     # Create sample historical data for GARCH demonstration
     np.random.seed(42)  # For reproducible results
@@ -63,7 +65,7 @@ def load_and_calibrate():
     # Run GARCH model on sample data
     conditional_vol, forecast_vol, garch_params = forecasting.run_garch_model(sample_df)
 
-    return final_params, rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params
+    return ns_params, ns_rmse, nss_params, nss_rmse, maturities, market_yields, conditional_vol, forecast_vol, garch_params
 
 
 # =================================================================

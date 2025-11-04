@@ -80,3 +80,37 @@ def calibrate_yield_curve(maturities, market_yields):
     
     print(f"Calibration complete. Final RMSE: {rmse_bps:.4f} bps")
     return final_params, rmse_bps
+
+def calibrate_svensson_model(maturities, market_yields):
+    """
+    Performs the complete two-stage calibration for the Nelson-Siegel-Svensson model
+    and returns the optimal parameters.
+    """
+    bounds = [(0, 15), (-15, 15), (-20, 20), (-20, 20), (0.01, 10), (0.01, 30)]
+
+    print("[Stage 1] Performing global search with Differential Evolution for NSS...")
+    global_result = differential_evolution(
+        func=objective_sse_svensson,
+        bounds=bounds,
+        args=(maturities, market_yields),
+        polish=False,
+        maxiter=1000
+    )
+
+    print("[Stage 2] Refining the NSS solution with L-BFGS-B...")
+    final_result = minimize(
+        fun=objective_sse_svensson,
+        x0=global_result.x,
+        args=(maturities, market_yields),
+        method='L-BFGS-B',
+        bounds=bounds,
+        tol=1e-8
+    )
+
+    final_params = final_result.x
+    model_yields_final = nelson_siegel_svensson(maturities, *final_params)
+    errors_bp = (market_yields - model_yields_final) * 100
+    rmse_bps = np.sqrt(np.mean(errors_bp ** 2))
+
+    print(f"NSS Calibration complete. Final RMSE: {rmse_bps:.4f} bps")
+    return final_params, rmse_bps

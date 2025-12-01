@@ -3,7 +3,7 @@
 A professional quantitative finance application featuring advanced yield curve modeling, volatility analysis, and production-grade data management.
 
 ## 🚀 Live Demo
-[View Live Dashboard](https://yourname-fixedincome.streamlit.app)
+[View Live Dashboard](https://fixedincomeanalysis.streamlit.app/)
 
 ## ✨ Key Features
 

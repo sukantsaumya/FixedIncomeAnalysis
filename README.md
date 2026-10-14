@@ -87,9 +87,3 @@ FixedIncomeAnalysis/
 ## 🤝 Contributing
 
 This project demonstrates professional quantitative finance and data engineering skills suitable for financial analyst and quantitative researcher roles.
-
-## 📞 Contact
-
-- **LinkedIn**: [Your LinkedIn Profile]
-- **GitHub**: [Your GitHub Profile]
-- **Email**: [Your Email]
